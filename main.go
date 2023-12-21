@@ -94,7 +94,7 @@ func main() {
 
 	ctx := context.Background()
 	dev, err := device.Open("/dev/video0", device.WithPixFormat(
-		v4l2.PixFormat{PixelFormat: v4l2.PixelFmtMPEG, Width: 640, Height: 480},
+		v4l2.PixFormat{PixelFormat: v4l2.PixelFmtH264, Width: 640, Height: 480},
 	))
 	if err != nil {
 		log.Fatalf("the error: %d ", err)

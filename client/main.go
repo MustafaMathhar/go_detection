@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -9,6 +10,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/ebitengine/oto/v3"
+	"github.com/hajimehoshi/go-mp3"
 	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
 
@@ -20,7 +23,7 @@ const (
 	frameWidth     = 640
 	frameHeight    = 480
 	frameChannels  = 3
-	waitKeyDelayMS = 1000
+	waitKeyDelayMS = 300
 )
 
 var upgrader = websocket.Upgrader{
@@ -28,7 +31,19 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 128000,
 }
 
+var op = &oto.NewContextOptions{
+	SampleRate:   44100,
+	ChannelCount: 2,
+	Format:       oto.FormatSignedInt16LE,
+}
+
 func main() {
+	// open sound
+	otoCtx, readyChan, err := oto.NewContext(op)
+	if err != nil {
+		panic("oto.NewContext failed: " + err.Error())
+	}
+	<-readyChan
 	// Open the webcam device
 	ctx := context.Background()
 	dev, err := device.Open("/dev/video0", device.WithPixFormat(
@@ -55,7 +70,7 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	messageChan := make(chan []byte,128000) // Channel to handle received messages
+	messageChan := make(chan []byte, 128000) // Channel to handle received messages
 
 	go func() {
 		for {
@@ -67,7 +82,6 @@ func main() {
 			}
 
 			if messageType == websocket.BinaryMessage && len(sound) > 0 {
-				log.Println("sound bytes are:", len(sound))
 				// Handle binary message (sound data) received from the server
 				// Process or use the received sound data as needed
 				select {
@@ -79,7 +93,7 @@ func main() {
 			}
 		}
 	}()
-  for {
+	for {
 		select {
 		case frame, ok := <-dev.GetOutput():
 			if !ok {
@@ -100,10 +114,25 @@ func main() {
 				return
 			}
 			log.Println("Received sound bytes:", len(sound))
+
+			fbReader := bytes.NewReader(sound)
+			decodedMp3, err := mp3.NewDecoder(fbReader)
+
+			player := otoCtx.NewPlayer(decodedMp3)
+			player.Play()
+
+			// We can wait for the sound to finish playing using something like this
+			for player.IsPlaying() {
+				time.Sleep(time.Millisecond)
+			}
+			if err != nil {
+				panic("mp3.NewDecoder failed: " + err.Error())
+			}
+
 			// Process or use the received sound data from the server
 			// ...
 		}
 		time.Sleep(time.Millisecond * waitKeyDelayMS)
 	}
-	
+
 }

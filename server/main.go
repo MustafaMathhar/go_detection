@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	vision "cloud.google.com/go/vision/apiv1"
-	"cloud.google.com/go/vision/v2/apiv1/visionpb"
 	"github.com/gorilla/websocket"
 )
 
@@ -27,8 +25,9 @@ func handleVideoUpload(
 ) {
 	// Upgrade HTTP connection to a WebSocket connection
 
-	var wg sync.WaitGroup
-	resultChan := make(chan *visionpb.EntityAnnotation)
+	// var wg sync.WaitGroup
+	// resultChan := make(chan *visionpb.EntityAnnotation, 1024)
+	readChan := make(chan []byte, 1)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -36,6 +35,46 @@ func handleVideoUpload(
 	}
 	defer conn.Close()
 
+	var prevText int
+
+	go func() {
+		for {
+			select {
+			default:
+			case image, isOpen := <-readChan:
+				if !isOpen {
+					return
+				}
+				log.Println(len(image))
+				img := buildImage(image)
+				res, err := vc.DetectTexts(ctx, &img, &imageContext, 1)
+				if err != nil {
+					log.Fatalf("Error sending requests: %v", err)
+					return
+				}
+
+				if len(res) > 0 {
+					if text := res[0].GetDescription(); len(text) > 0 {
+						if len(text) == prevText{
+							continue
+						}
+						speechBytes := displayResults(text, tc, ctx)
+						log.Println(
+							len(speechBytes),
+							text,
+						)
+						prevText = len(text)
+						// Assuming 'conn' is defined somewhere in your code
+						err := conn.WriteMessage(websocket.BinaryMessage, speechBytes)
+						if err != nil {
+							log.Println("Error sending message:", err)
+							break
+						}
+					}
+				}
+			}
+		}
+	}()
 	for {
 		// Read message from the WebSocket client
 		messageType, img, err := conn.ReadMessage()
@@ -45,35 +84,30 @@ func handleVideoUpload(
 		}
 
 		if messageType == websocket.BinaryMessage {
-			// Handle binary message (video data) received from the client
-			//fmt.Printf("Received %d bytes of video data from client\n", len(img))
-
-			wg.Add(1)
-			go detectText(ctx, vc, img, resultChan, &wg)
-			go func() {
-				for res := range resultChan {
-					speechBytes := displayResults(res.GetDescription(), tc, ctx)
-					log.Println(
-						len(speechBytes),
-            res.GetDescription(),
-					)
-					err := conn.WriteMessage(websocket.BinaryMessage, speechBytes)
-					if err != nil {
-						log.Println("Error sending message:", err)
-						break
-					}
-					// Process detected text annotation (change as needed)
-					// Draw bounding boxes if needed
-					/*	window.IMShow(img)
-						if window.WaitKey(1) >= 0 {
-							break
-						}*/
-				}
-
-			}()
-			// Here, you can process or store the video data as needed
-			// For demonstration purposes, we are just logging the size of received data
+			readChan <- img
 		}
+		// Handle binary message (video data) received from the client
+		//fmt.Printf("Received %d bytes of video data from client\n", len(img))
+		//
+		// wg.Add(1)
+		// go detectText(ctx, vc, img, resultChan, &wg)
+		// select {
+		// case res := <-resultChan:
+		// 	speechBytes := displayResults(res.GetDescription(), tc, ctx)
+		// 	log.Println(
+		// 		len(speechBytes),
+		// 		res.GetDescription(),
+		// 	)
+		// 	err := conn.WriteMessage(websocket.BinaryMessage, speechBytes)
+		// 	if err != nil {
+		// 		log.Println("Error sending message:", err)
+		// 		break
+		// 	}
+		// default:
+		// 	// Drop the message if the channel is full (non-blocking)
+		// }
+		// Here, you can process or store the video data as needed
+		// For demonstration purposes, we are just logging the size of received data
 	}
 }
 

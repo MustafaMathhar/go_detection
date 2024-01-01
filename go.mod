@@ -8,6 +8,7 @@ require (
 	cloud.google.com/go/vision/v2 v2.7.3
 	github.com/ebitengine/oto/v3 v3.1.0
 	github.com/gorilla/websocket v1.5.1
+	github.com/hajimehoshi/ebiten/v2 v2.6.3
 	github.com/hajimehoshi/go-mp3 v0.3.4
 	github.com/vladimirvivien/go4vl v0.0.5
 	google.golang.org/api v0.149.0
@@ -24,11 +25,15 @@ require (
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
+	github.com/jezek/xgb v1.1.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
+	golang.org/x/exp/shiny v0.0.0-20231226003508-02704c960a9b // indirect
+	golang.org/x/image v0.14.0 // indirect
+	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
-	golang.org/x/sync v0.4.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

@@ -22,7 +22,6 @@ const (
 	serverURL      = "ws://localhost:8080/upload" // Change to your server's WebSocket URL
 	frameWidth     = 640
 	frameHeight    = 480
-	frameChannels  = 3
 	waitKeyDelayMS = 300
 )
 

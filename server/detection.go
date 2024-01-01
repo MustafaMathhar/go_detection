@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
-	"sync"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	"cloud.google.com/go/texttospeech/apiv1/texttospeechpb"
@@ -23,32 +23,52 @@ func buildImage(image []byte) visionpb.Image {
 	}
 
 }
-func detectText(
 
+func detectObjects(
 	ctx context.Context,
-	visionClient *vision.ImageAnnotatorClient,
-	image []byte,
-	resultChan chan<- *visionpb.EntityAnnotation,
-	wg *sync.WaitGroup,
-) {
-	defer wg.Done()
-
-	img := buildImage(image)
-	res, err := visionClient.DetectTexts(ctx, &img, &imageContext, 1)
+	img *visionpb.Image,
+	imageContext *visionpb.ImageContext,
+	vc *vision.ImageAnnotatorClient,
+) (string, error) {
+	res, err := vc.LocalizeObjects(ctx, img, imageContext)
 	if err != nil {
 		log.Fatalf("Error sending requests: %v", err)
-		return
 	}
+	if len(res) <= 0 {
+		return "", errors.New("response is 0")
 
-	if len(res) > 0 {
+	}
+	var finalTxt string
+	for _, annotation := range res {
+		if annotation.GetScore() >= 0.60 {
 
-		if text := res[0].GetDescription(); len(text) > 0 {
-			//log.Println(text)
-
-			resultChan <- res[0] // Send the detected text annotation through the channel
+			finalTxt = finalTxt + annotation.GetName() + " "
 		}
 	}
+	return finalTxt, nil
+}
+func detectText(
 
+	img *visionpb.Image,
+	imageContext *visionpb.ImageContext,
+	vc *vision.ImageAnnotatorClient,
+	ctx context.Context,
+) string {
+
+	res, err := vc.DetectTexts(ctx, img, imageContext, 1)
+	if err != nil {
+		log.Fatalf("Error sending requests: %v", err)
+	}
+
+	if len(res) <= 0 {
+		return ""
+	}
+	text := res[0].GetDescription()
+	if len(text) <= 0 {
+		//log.Println(text)
+		return ""
+	}
+	return text
 }
 
 func createTTSRequest(res string) texttospeechpb.SynthesizeSpeechRequest {
@@ -58,12 +78,15 @@ func createTTSRequest(res string) texttospeechpb.SynthesizeSpeechRequest {
 			InputSource: &texttospeechpb.SynthesisInput_Text{Text: res},
 		},
 		Voice: &texttospeechpb.VoiceSelectionParams{
+			Name:         "en-US-Wavenet-A",
 			LanguageCode: "en-US",
-			SsmlGender:   texttospeechpb.SsmlVoiceGender_FEMALE,
+			//SsmlGender:   texttospeechpb.,
 		},
 		AudioConfig: &texttospeechpb.AudioConfig{
-			AudioEncoding: texttospeechpb.AudioEncoding_MP3,
-			SpeakingRate:  0.5,
+			AudioEncoding:    texttospeechpb.AudioEncoding_MP3,
+			EffectsProfileId: []string{"headphone-class-device"},
+			SpeakingRate:     0.6,
+			Pitch:            0.5,
 		},
 	}
 

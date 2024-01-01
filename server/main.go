@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	vision "cloud.google.com/go/vision/apiv1"
@@ -36,6 +37,7 @@ func handleVideoUpload(
 	defer conn.Close()
 
 	var prevText int
+  
 
 	go func() {
 		for {
@@ -45,35 +47,35 @@ func handleVideoUpload(
 				if !isOpen {
 					return
 				}
-				log.Println(len(image))
+       // go showImageInWindow(image)
+				start := time.Now()
 				img := buildImage(image)
-				res, err := vc.DetectTexts(ctx, &img, &imageContext, 1)
-				if err != nil {
-					log.Fatalf("Error sending requests: %v", err)
-					return
+        
+
+				//finalTxt, err := detectObjects(ctx, &img, &imageContext, vc)
+				finalTxt := detectText(&img, &imageContext, vc, ctx)
+				if len(finalTxt) == prevText {
+					continue
+
 				}
 
-				if len(res) > 0 {
-					if text := res[0].GetDescription(); len(text) > 0 {
-						if len(text) == prevText{
-							continue
-						}
-						speechBytes := displayResults(text, tc, ctx)
-						log.Println(
-							len(speechBytes),
-							text,
-						)
-						prevText = len(text)
-						// Assuming 'conn' is defined somewhere in your code
-						err := conn.WriteMessage(websocket.BinaryMessage, speechBytes)
-						if err != nil {
-							log.Println("Error sending message:", err)
-							break
-						}
-					}
+				speechBytes := displayResults(finalTxt, tc, ctx)
+				log.Println(
+					len(speechBytes),
+					finalTxt,
+				)
+				prevText = len(finalTxt)
+				// Assuming 'conn' is defined somewhere in your code
+				err = conn.WriteMessage(websocket.BinaryMessage, speechBytes)
+				if err != nil {
+					log.Println("Error sending message:", err)
+					break
 				}
+				log.Printf("Time taken: %v", time.Since(start))
+
 			}
 		}
+
 	}()
 	for {
 		// Read message from the WebSocket client

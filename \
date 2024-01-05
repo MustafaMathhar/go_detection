@@ -11,12 +11,15 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/ebitengine/oto/v3"
+	"github.com/gordonklaus/portaudio"
 	"github.com/gorilla/websocket"
 	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
 )
 
 const (
+	serverURL      = "ws://localhost:8080/upload" // Change to your server's WebSocket URL
 	frameWidth     = 480
 	frameHeight    = 360
 	waitKeyDelayMS = 300
@@ -27,11 +30,20 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 128000,
 }
 
+var op = &oto.NewContextOptions{
+	SampleRate:   44100,
+	ChannelCount: 2,
+	Format:       oto.FormatFloat32LE,
+}
+
 func main() {
 	// open sound
 
 	// Initialize PortAudio
-
+	if err := portaudio.Initialize(); err != nil {
+		log.Fatalf("PortAudio initialization error: %v", err)
+	}
+	defer portaudio.Terminate()
 	serverIP := flag.String("ip", "", "ip of the server")
 	flag.Parse()
 	if len(*serverIP) == 0 {
@@ -40,7 +52,7 @@ func main() {
 	// Open the webcam device
 	ctx := context.Background()
 	dev, err := device.Open("/dev/video0", device.WithPixFormat(
-		v4l2.PixFormat{PixelFormat: v4l2.PixelFmtJPEG, Width: frameWidth, Height: frameHeight},
+		v4l2.PixFormat{PixelFormat: v4l2.PixelFmtJPEG, Width: 480, Height: 360},
 	))
 	if err != nil {
 		log.Fatalf("the error: %d ", err)
@@ -64,6 +76,7 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt)
 
 	messageChan := make(chan []byte, 128000) // Channel to handle received messages
+
 
 	go func() {
 		for {
@@ -119,22 +132,8 @@ func main() {
 				log.Fatal("Error writing to file:", err)
 			}
 
-			playCmd := exec.Command(
-				"paplay",
-				"--channels=2",
-				"--rate=44100",
-				"--format=s16le",
-				tempFile.Name(),
-			)
-			if err := playCmd.Start(); err != nil {
-				log.Fatalf("Error playing audio: %s", err)
-			}
-
-			// Wait for the audio playback to finish
-			if err := playCmd.Wait(); err != nil {
-				log.Fatalf("Error waiting for playback: %s", err)
-			}
-
+      exec.Command("paplay", "--channels=2", "--rate=44100", "--format=s16le", tempFile.Name())
+      
 			// Run the command for a specific duration (or until completion)
 			// Adjust the duration as needed or handle playback differently based on your requirements
 

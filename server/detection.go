@@ -12,7 +12,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-var CREDENTIALS = option.WithCredentialsFile("./glassy-courage-399211-c6db5fa7335d.json")
+var CREDENTIALS = option.WithCredentialsFile("./coastal-mercury-410017-dca4a85de2f2.json")
 var imageContext = visionpb.ImageContext{
 	LanguageHints: []string{"en", "ar"},
 }
@@ -53,40 +53,48 @@ func detectText(
 	imageContext *visionpb.ImageContext,
 	vc *vision.ImageAnnotatorClient,
 	ctx context.Context,
-) string {
+) (string, string) {
 
 	res, err := vc.DetectTexts(ctx, img, imageContext, 1)
+
 	if err != nil {
 		log.Fatalf("Error sending requests: %v", err)
 	}
 
 	if len(res) <= 0 {
-		return ""
+		return "", ""
 	}
-	text := res[0].GetDescription()
+	text, locale := res[0].GetDescription(), res[0].GetLocale()
 	if len(text) <= 0 {
 		//log.Println(text)
-		return ""
+		return "", ""
 	}
-	return text
+	return text, locale
 }
 
-func createTTSRequest(res string) texttospeechpb.SynthesizeSpeechRequest {
+func createTTSRequest(res string,locale string) texttospeechpb.SynthesizeSpeechRequest {
+  var  langCode string
+  if locale=="ar" {
+    langCode="ar-XA"
+    
+  }else{
+    langCode="en-US"
+  }
 
 	return texttospeechpb.SynthesizeSpeechRequest{
 		Input: &texttospeechpb.SynthesisInput{
 			InputSource: &texttospeechpb.SynthesisInput_Text{Text: res},
 		},
 		Voice: &texttospeechpb.VoiceSelectionParams{
-			Name:         "en-US-Wavenet-A",
-			LanguageCode: "en-US",
+			Name:         langCode+"-Wavenet-A",
+			LanguageCode: langCode,
 			//SsmlGender:   texttospeechpb.,
 		},
 		AudioConfig: &texttospeechpb.AudioConfig{
 			AudioEncoding:    texttospeechpb.AudioEncoding_MP3,
 			EffectsProfileId: []string{"headphone-class-device"},
-			SpeakingRate:     0.6,
-			Pitch:            0.5,
+			SpeakingRate:     1.5,
+			Pitch:            1,
 		},
 	}
 
@@ -94,6 +102,7 @@ func createTTSRequest(res string) texttospeechpb.SynthesizeSpeechRequest {
 
 func displayResults(
 	res string,
+  locale string,
 	tc *texttospeech.Client,
 	ctx context.Context,
 	//oc *oto.Context,
@@ -101,7 +110,7 @@ func displayResults(
 
 	// Draw bounding boxes if needed
 	// gocv.Rectangle(...)
-	req := createTTSRequest(res)
+	req := createTTSRequest(res,locale)
 	resp, err := tc.SynthesizeSpeech(ctx, &req)
 	if err != nil {
 		log.Fatal(err)

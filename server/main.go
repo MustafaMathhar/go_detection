@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,7 +29,7 @@ func handleVideoUpload(
 
 	// var wg sync.WaitGroup
 	// resultChan := make(chan *visionpb.EntityAnnotation, 1024)
-	readChan := make(chan []byte, 1)
+	readChan := make(chan []byte, 4096)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -37,45 +38,34 @@ func handleVideoUpload(
 	defer conn.Close()
 
 	var prevText int
-  
 
 	go func() {
-		for {
-			select {
-			default:
-			case image, isOpen := <-readChan:
-				if !isOpen {
-					return
-				}
-       // go showImageInWindow(image)
-				start := time.Now()
-				img := buildImage(image)
-        
+		for v := range readChan {
+			start := time.Now()
+			img := buildImage(v)
 
-				//finalTxt, err := detectObjects(ctx, &img, &imageContext, vc)
-				finalTxt := detectText(&img, &imageContext, vc, ctx)
-				if len(finalTxt) == prevText {
-					continue
-
-				}
-
-				speechBytes := displayResults(finalTxt, tc, ctx)
-				log.Println(
-					len(speechBytes),
-					finalTxt,
-				)
-				prevText = len(finalTxt)
-				// Assuming 'conn' is defined somewhere in your code
-				err = conn.WriteMessage(websocket.BinaryMessage, speechBytes)
-				if err != nil {
-					log.Println("Error sending message:", err)
-					break
-				}
-				log.Printf("Time taken: %v", time.Since(start))
+			//finalTxt, err := detectObjects(ctx, &img, &imageContext, vc)
+			finalTxt, locale := detectText(&img, &imageContext, vc, ctx)
+			if len(finalTxt) == prevText {
+				continue
 
 			}
-		}
 
+			speechBytes := displayResults(finalTxt, locale, tc, ctx)
+			log.Println(
+				len(speechBytes),
+				finalTxt,
+			)
+			prevText = len(finalTxt)
+			// Assuming 'conn' is defined somewhere in your code
+			err = conn.WriteMessage(websocket.BinaryMessage, speechBytes)
+			if err != nil {
+				log.Println("Error sending message:", err)
+				break
+			}
+			log.Printf("Time taken: %v", time.Since(start))
+
+		}
 	}()
 	for {
 		// Read message from the WebSocket client
@@ -88,32 +78,15 @@ func handleVideoUpload(
 		if messageType == websocket.BinaryMessage {
 			readChan <- img
 		}
-		// Handle binary message (video data) received from the client
-		//fmt.Printf("Received %d bytes of video data from client\n", len(img))
-		//
-		// wg.Add(1)
-		// go detectText(ctx, vc, img, resultChan, &wg)
-		// select {
-		// case res := <-resultChan:
-		// 	speechBytes := displayResults(res.GetDescription(), tc, ctx)
-		// 	log.Println(
-		// 		len(speechBytes),
-		// 		res.GetDescription(),
-		// 	)
-		// 	err := conn.WriteMessage(websocket.BinaryMessage, speechBytes)
-		// 	if err != nil {
-		// 		log.Println("Error sending message:", err)
-		// 		break
-		// 	}
-		// default:
-		// 	// Drop the message if the channel is full (non-blocking)
-		// }
-		// Here, you can process or store the video data as needed
-		// For demonstration purposes, we are just logging the size of received data
 	}
 }
 
 func main() {
+	wordPtr := flag.String("ip", "localhost", "the ip address")
+	flag.Parse()
+	if wordPtr == nil {
+		log.Fatal("Error no address set")
+	}
 	ctx := context.Background()
 
 	visionClient, err := vision.NewImageAnnotatorClient(ctx, CREDENTIALS)
@@ -133,9 +106,9 @@ func main() {
 
 	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
 		handleVideoUpload(w, r, visionClient, tc, ctx)
-
 	})
 
+	serverAddr := *wordPtr + ":8080"
 	fmt.Println("WebSocket server is running on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(serverAddr, nil))
 }

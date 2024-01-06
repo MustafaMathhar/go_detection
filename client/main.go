@@ -107,7 +107,7 @@ func main() {
 				return
 			}
 			log.Println("Received sound bytes:", len(sound))
-			tempFile, err := os.CreateTemp("", "sound.mp3")
+			tempFile, err := os.CreateTemp("", "sound.wav")
 			if err != nil {
 				log.Fatal("failed to create temp file")
 
@@ -116,10 +116,15 @@ func main() {
 				tempFile.Name(),
 			) // Remove the temporary file when done		log.Fatalf("PortAudio stream error: %v", err)
 			_, err = tempFile.Write(sound)
+
 			if err != nil {
 				log.Fatal("Error writing to file:", err)
 			}
+			err = os.WriteFile("test.wav", sound, 0644)
 
+			if err != nil {
+				log.Fatal("Error writing to file:", err)
+			}
 			playCmd := exec.Command(
 				"paplay",
 				"--channels=2",

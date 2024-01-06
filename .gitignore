@@ -8,6 +8,8 @@
 *.so
 *.dylib
 *.json
+*.mp3
+*.wav
 
 # Test binary, built with `go test -c`
 *.test

@@ -91,7 +91,7 @@ func createTTSRequest(res string,locale string) texttospeechpb.SynthesizeSpeechR
 			//SsmlGender:   texttospeechpb.,
 		},
 		AudioConfig: &texttospeechpb.AudioConfig{
-			AudioEncoding:    texttospeechpb.AudioEncoding_MP3,
+			AudioEncoding:    texttospeechpb.AudioEncoding_LINEAR16,
 			EffectsProfileId: []string{"headphone-class-device"},
 			SpeakingRate:     1.5,
 			Pitch:            1,

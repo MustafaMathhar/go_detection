@@ -17,7 +17,7 @@ func main() {
 	defer rpio.Close()
 
 	// Use GPIO pin 17 (BCM numbering) as an input for a switch
-	pin := rpio.Pin(17)
+	pin := rpio.Pin(3)
 	pin.Input()
 
 	// Loop to continuously read the state of the switch
@@ -28,6 +28,6 @@ func main() {
 			fmt.Println("Switch not pressed")
 		}
 
-		time.Sleep(100 * time.Millisecond) // Add a short delay to avoid continuous polling
+		time.Sleep(600 * time.Millisecond) // Add a short delay to avoid continuous polling
 	}
 }

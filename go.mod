@@ -6,10 +6,8 @@ require (
 	cloud.google.com/go/texttospeech v1.7.4
 	cloud.google.com/go/vision v1.2.0
 	cloud.google.com/go/vision/v2 v2.7.3
-	github.com/ebitengine/oto/v3 v3.1.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/hajimehoshi/ebiten/v2 v2.6.3
-	github.com/hajimehoshi/go-mp3 v0.3.4
 	github.com/vladimirvivien/go4vl v0.0.5
 	google.golang.org/api v0.149.0
 )

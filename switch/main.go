@@ -17,7 +17,7 @@ func main() {
 	defer rpio.Close()
 
 	// Use GPIO pin 17 (BCM numbering) as an input for a switch
-	pin := rpio.Pin(3)
+	pin := rpio.Pin(22)
 	pin.Input()
 	pin.PullUp()
 	pin.Detect(rpio.FallEdge)

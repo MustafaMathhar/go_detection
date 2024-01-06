@@ -25,10 +25,15 @@ func main() {
 	for {
 		if pin.EdgeDetected() {
 			fmt.Println("Switch pressed")
-		} else {
-			fmt.Println("Switch not pressed")
+			pin.Detect(rpio.NoEdge)            // Disable further edge detection for now
+			time.Sleep(100 * time.Millisecond) // Sleep to debounce the switch
+			for pin.Read() == rpio.Low {
+				// Wait for the switch to be released
+				time.Sleep(100 * time.Millisecond)
+			}
+			pin.Detect(rpio.FallEdge) // Re-enable edge detection
 		}
 
-		time.Sleep(600 * time.Millisecond) // Add a short delay to avoid continuous polling
+		time.Sleep(100 * time.Millisecond) // Add a short delay to avoid continuous polling
 	}
 }

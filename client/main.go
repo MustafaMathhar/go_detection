@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -63,7 +63,7 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	messageChan := make(chan []byte, 128000) // Channel to handle received messages
+	messageChan := make(chan []byte, 4096) // Channel to handle received messages
 
 	go func() {
 		for {
@@ -120,35 +120,28 @@ func main() {
 			if err != nil {
 				log.Fatal("Error writing to file:", err)
 			}
-			err = os.WriteFile("test.wav", sound, 0644)
 
 			if err != nil {
 				log.Fatal("Error writing to file:", err)
 			}
-			playCmd := exec.Command(
+			command := "/usr/bin/paplay"
+			args := []string{
 				"paplay",
 				"--channels=2",
 				"--rate=44100",
 				"--format=s16le",
 				tempFile.Name(),
-			)
-			if err := playCmd.Start(); err != nil {
-				log.Fatalf("Error playing audio: %s", err)
 			}
-
-			// Wait for the audio playback to finish
-			if err := playCmd.Wait(); err != nil {
-				log.Fatalf("Error waiting for playback: %s", err)
-			}
-
-			// Run the command for a specific duration (or until completion)
-			// Adjust the duration as needed or handle playback differently based on your requirements
-
-			// Stop playing sound
-
+			pid, err := syscall.ForkExec(command, args, &syscall.ProcAttr{
+				Env:   os.Environ(),
+				Files: []uintptr{0, 1, 2}, // Inherit stdin, stdout, stderr
+			})
 			if err != nil {
-				panic("mp3.NewDecoder failed: " + err.Error())
+				log.Fatalf("Error executing paplay: %s", err)
 			}
+			var ws syscall.WaitStatus
+			syscall.Wait4(pid, &ws, 0, nil)
+				log.Printf("Process exited with status %d\n", ws.ExitStatus())
 		}
 		time.Sleep(time.Millisecond * waitKeyDelayMS)
 	}

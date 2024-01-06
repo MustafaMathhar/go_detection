@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	vision "cloud.google.com/go/vision/apiv1"
@@ -41,14 +40,12 @@ func handleVideoUpload(
 
 	go func() {
 		for v := range readChan {
-			start := time.Now()
 			img := buildImage(v)
 
 			//finalTxt, err := detectObjects(ctx, &img, &imageContext, vc)
 			finalTxt, locale := detectText(&img, &imageContext, vc, ctx)
 			if len(finalTxt) == prevText {
 				continue
-
 			}
 
 			speechBytes := displayResults(finalTxt, locale, tc, ctx)
@@ -63,7 +60,6 @@ func handleVideoUpload(
 				log.Println("Error sending message:", err)
 				break
 			}
-			log.Printf("Time taken: %v", time.Since(start))
 
 		}
 	}()

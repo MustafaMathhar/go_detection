@@ -19,10 +19,11 @@ func main() {
 	// Use GPIO pin 17 (BCM numbering) as an input for a switch
 	pin := rpio.Pin(3)
 	pin.Input()
-
+	pin.PullUp()
+	pin.Detect(rpio.FallEdge)
 	// Loop to continuously read the state of the switch
 	for {
-		if pin.Read() == rpio.High {
+		if pin.EdgeDetected() {
 			fmt.Println("Switch pressed")
 		} else {
 			fmt.Println("Switch not pressed")

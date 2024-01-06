@@ -63,7 +63,7 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	messageChan := make(chan []byte, 4096) // Channel to handle received messages
+	messageChan := make(chan []byte,  1) // Channel to handle received messages
 
 	go func() {
 		for {
@@ -99,6 +99,7 @@ func main() {
 				return
 			}
 		case <-interrupt:
+			dev.Close()
 			fmt.Println("Streaming stopped")
 			return
 		case sound, ok := <-messageChan:
@@ -141,7 +142,7 @@ func main() {
 			}
 			var ws syscall.WaitStatus
 			syscall.Wait4(pid, &ws, 0, nil)
-				log.Printf("Process exited with status %d\n", ws.ExitStatus())
+			log.Printf("Process exited with status %d\n", ws.ExitStatus())
 		}
 		time.Sleep(time.Millisecond * waitKeyDelayMS)
 	}

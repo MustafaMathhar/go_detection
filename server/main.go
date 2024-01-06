@@ -42,13 +42,14 @@ func handleVideoUpload(
 		for v := range readChan {
 			img := buildImage(v)
 
-			finalTxt, _ := detectObjects(ctx, &img, &imageContext, vc)
+			finalTxt, _:= detectObjects(ctx, &img, &imageContext, vc)
 			//finalTxt, locale := detectText(&img, &imageContext, vc, ctx)
 			if len(finalTxt) == prevText {
 				continue
 			}
+      
 
-			speechBytes := displayResults(finalTxt, "", tc, ctx)
+			speechBytes := displayResults(finalTxt,"", tc, ctx)
 			log.Println(
 				len(speechBytes),
 				finalTxt,
@@ -77,12 +78,13 @@ func handleVideoUpload(
 	}
 }
 
+
 func main() {
-	wordPtr := flag.String("ip", "localhost", "the ip address")
-	flag.Parse()
-	if wordPtr == nil {
-		log.Fatal("Error no address set")
-	}
+  wordPtr:=flag.String("ip", "localhost", "the ip address")
+  flag.Parse()
+  if wordPtr==nil{
+    log.Fatal("Error no address set")
+  }
 	ctx := context.Background()
 
 	visionClient, err := vision.NewImageAnnotatorClient(ctx, CREDENTIALS)
@@ -103,6 +105,8 @@ func main() {
 	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
 		handleVideoUpload(w, r, visionClient, tc, ctx)
 	})
-mt.Println("WebSocket server is running on port 8080")
+  
+	serverAddr := *wordPtr + ":8080"
+	fmt.Println("WebSocket server is running on port 8080")
 	log.Fatal(http.ListenAndServe(serverAddr, nil))
 }

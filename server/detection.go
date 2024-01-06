@@ -107,6 +107,10 @@ func displayResults(
 	ctx context.Context,
 	//oc *oto.Context,
 ) []byte {
+  if locale=="" {
+    locale="en"
+    
+  }
 
 	// Draw bounding boxes if needed
 	// gocv.Rectangle(...)

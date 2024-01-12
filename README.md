@@ -12,10 +12,8 @@ if you want to develop or test this project by yourself, you must need a Google 
 project, with [Google Cloud Vision AI](https://cloud.google.com/vision?hl=en) and  [Google Cloud Text-to-Speech](https://cloud.google.com/text-to-speech?hl=en). 
 You also need to set the environment variable with your credentials file path
 
-``` 
+```sh 
 GCLOUD_CREDENTIALS=<credentials_file_location>
-
 ```
-
-# How to
+This program works with Go version 1.21.4+ only
 

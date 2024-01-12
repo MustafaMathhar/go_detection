@@ -11,7 +11,9 @@ import (
 	"cloud.google.com/go/vision/v2/apiv1/visionpb"
 	"google.golang.org/api/option"
 )
-
+func InitializeCredentials(creds string) option.ClientOption  {
+  return option.WithCredentialsFile(creds)
+}
 var CREDENTIALS = option.WithCredentialsFile("./coastal-mercury-410017-dca4a85de2f2.json")
 var imageContext = visionpb.ImageContext{
 	LanguageHints: []string{"en", "ar"},

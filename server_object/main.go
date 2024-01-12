@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
 	vision "cloud.google.com/go/vision/apiv1"
@@ -80,6 +81,11 @@ func handleVideoUpload(
 
 
 func main() {
+   value, ok := os.LookupEnv("GCLOUD_CREDENTIALS") 
+
+  if !ok{
+    log.Fatal("Error: no credentials files were found, please set it using \"GCLOUD_CREDENTIALS\" variable.")
+  }
   wordPtr:=flag.String("ip", "localhost", "the ip address")
   flag.Parse()
   if wordPtr==nil{
@@ -87,7 +93,7 @@ func main() {
   }
 	ctx := context.Background()
 
-	visionClient, err := vision.NewImageAnnotatorClient(ctx, CREDENTIALS)
+	visionClient, err := vision.NewImageAnnotatorClient(ctx, InitializeCredentials(value))
 	if err != nil {
 		log.Fatalf("Failed to create vision client: %v", err)
 	}

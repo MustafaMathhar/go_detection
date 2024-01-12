@@ -9,5 +9,11 @@ as using open source and cheap hardware (Raspberry Pi Zero W).
 
 # Important
 if you want to develop or test this project by yourself, you must need a Google Cloud
-project, with [Google Cloud Vision AI](https://cloud.google.com/vision?hl=en) and  
-[Google Cloud Text-to-Speech](https://cloud.google.com/text-to-speech?hl=en) 
+project, with [Google Cloud Vision AI](https://cloud.google.com/vision?hl=en) and  [Google Cloud Text-to-Speech](https://cloud.google.com/text-to-speech?hl=en). 
+You also need to set the environment variable with your credentials file path
+
+``` 
+GCLOUD_CREDENTIALS=<credentials_file_location>
+
+```
+
